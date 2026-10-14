@@ -1,0 +1,10 @@
+[project]
+name = "incident-triage-agent-poc"
+version = "0.1.0"
+description = "Autonomous Incident Triage & Root-Cause Analysis Agent POC"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

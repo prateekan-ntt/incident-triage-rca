@@ -1,0 +1,63 @@
+Metadata-Version: 2.4
+Name: incident-triage-agent-poc
+Version: 0.1.0
+Summary: Autonomous Incident Triage & Root-Cause Analysis Agent POC
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+
+# Incident Triage Agent POC
+
+Local Ollama/Qwen3-backed synthetic incident triage prototype. The CLI calls `qwen3:4b` through Ollama at `http://localhost:11434`; it does not call GitHub Copilot, an IDE model, or a hosted LLM.
+
+## Windows setup
+
+Install Python 3.11+ and Ollama for Windows, then open a new PowerShell terminal. Pull and verify the required model:
+
+```powershell
+ollama pull qwen3:4b
+ollama list
+```
+
+The model should appear as `qwen3:4b`. Ollama stores models under `%USERPROFILE%\.ollama\models` by default. Start the local server if it is not already running:
+
+```powershell
+ollama serve
+```
+
+Install and run the POC from this directory:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m pip install -e .
+python -m pytest -q
+python -m incident_triage_agent.cli --scenario bad_deployment
+```
+
+The helper script performs dependency setup, checks/pulls `qwen3:4b`, runs tests, then runs the requested mode:
+
+```powershell
+.\run_poc.ps1 -Scenario -ScenarioName bad_deployment
+.\run_poc.ps1 -Evaluate
+```
+
+On CPU-only hardware, Qwen3 inference can take several minutes per incident. The evaluation makes one model request for each of the eight scenarios.
+
+## Unseen alert input
+
+Create a JSON file containing alerts, then run:
+
+```powershell
+python -m incident_triage_agent.cli --alerts-file .\alerts.json
+```
+
+Accepted input is either a JSON array of alert objects or an object with an `alerts` array. Each alert should include `service`, `severity`, `message`, and `timestamp`.
+
+The Ollama endpoint and model can be changed with `OLLAMA_BASE_URL` and `OLLAMA_MODEL`; defaults are `http://localhost:11434` and `qwen3:4b`.
+
+## Scope and limitations
+
+- Telemetry and runbooks are synthetic in-process fixtures; there are no live monitoring integrations.
+- The agent asks Qwen3 for a schema-constrained ranked top three. Tool selection, evidence handling, action classification, and approval requirements are enforced in Python, not delegated to native LLM tool calls.
+- Remediation proposals are displayed but never executed. Safe and Risky proposals require human confirmation; Risky proposals also require written justification; Forbidden actions remain denied.
+- Traces are included in the CLI output. An external LangSmith/Langfuse/OpenTelemetry exporter is not currently configured.
+- See [DESIGN_NOTE.md](DESIGN_NOTE.md) and [SELF_CHECK.md](SELF_CHECK.md) for the implementation choices and remaining gaps.
